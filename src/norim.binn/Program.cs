@@ -9,7 +9,7 @@ namespace norim.binn
     {
         static void Main(string[] args)
         {
-            var list = new List<object>();
+            var list = new List<Person>();
             // list.Add(null);
             // list.AddRange(new object[] { true, false });
             // list.AddRange(new object[] { 0, 1, -1, 2, -2, 4, -4, 6, -6 });
@@ -51,6 +51,8 @@ namespace norim.binn
             using(var serializer = new Serializer())
             {
                 var sw = new Stopwatch();
+                serializer.RegisterType<Person>();
+                
                 sw.Start();
                 var data = serializer.Serialize(list);
                 sw.Stop();

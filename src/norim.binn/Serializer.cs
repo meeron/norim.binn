@@ -1,5 +1,7 @@
 using System;
+using System.Linq;
 using System.Collections;
+using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Text;
@@ -10,9 +12,12 @@ namespace norim.binn
     {
         private readonly MemoryStream _mem;
 
+        private readonly Dictionary<Type, IProperty[]> _classCache;
+
         public Serializer()
         {
             _mem = new MemoryStream();
+            _classCache = new Dictionary<Type, IProperty[]>();
         }
 
         public byte[] Serialize(object value)
@@ -26,8 +31,17 @@ namespace norim.binn
             return _mem.ToArray();
         }
 
+        public void RegisterType<T>()
+        {
+            var type = typeof(T);
+            _classCache.Add(type,
+                type.GetProperties(BindingFlags.Instance | BindingFlags.Public)
+                    .Select(p => new CompiledProperty<T>(p)).ToArray());
+        }
+
         public void Dispose()
         {
+            _classCache.Clear();
             _mem.Dispose();
         }
 
@@ -307,8 +321,15 @@ namespace norim.binn
             if (buffer == null)
                 buffer = _mem;
 
-            var type = value.GetType();
-            var properties = type.GetProperties(BindingFlags.Instance | BindingFlags.Public);
+            var valueType = value.GetType();
+            if (!_classCache.ContainsKey(valueType))
+            {
+                _classCache.Add(valueType,
+                    valueType.GetProperties(BindingFlags.Instance | BindingFlags.Public)
+                        .Select(p => new Property(p)).ToArray());
+            }
+
+            var properties = _classCache[valueType];
 
             using(var objBuffer = new MemoryStream())
             {
