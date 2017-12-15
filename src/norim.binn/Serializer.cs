@@ -254,23 +254,20 @@ namespace norim.binn
 
             using(var enumeratorBuffer = new MemoryStream())
             {
-                using(var serializer = new Serializer())
+                while(enumerator.MoveNext())
                 {
-                    while(enumerator.MoveNext())
-                    {
-                        var data = serializer.Serialize(enumerator.Current);
-                        enumeratorBuffer.Write(data, 0, data.Length);
+                    if (SerializeInternal(enumerator.Current, enumeratorBuffer) == 0)
+                        throw new NotSupportedException($"Type '{enumerator.Current.GetType()}' is not supported.");
 
-                        count++;
-                    }                   
-                }
+                    count++;
+                }   
 
                 var bufferVarintData = ToVarint((int)enumeratorBuffer.Length + 3);
                 var countVaringData = ToVarint(count);
 
-                _mem.WriteByte(Types.List);
-                _mem.Write(bufferVarintData, 0, bufferVarintData.Length);
-                _mem.Write(countVaringData, 0 , countVaringData.Length);
+                buffer.WriteByte(Types.List);
+                buffer.Write(bufferVarintData, 0, bufferVarintData.Length);
+                buffer.Write(countVaringData, 0 , countVaringData.Length);
                 
                 enumeratorBuffer.Seek(0, SeekOrigin.Begin);
                 enumeratorBuffer.CopyTo(buffer);
@@ -324,7 +321,7 @@ namespace norim.binn
                         throw new OverflowException("Property name should have max length 255.");
 
                     if (SerializeInternal(prop.GetValue(value), objBuffer) == 0)
-                        throw new NotSupportedException($"Type '{value.GetType()}' is not supported.");                    
+                        throw new NotSupportedException($"Type '{prop.DeclaringType}' is not supported.");                    
                 }
 
                 var bufferSize = (int)objBuffer.Length;
