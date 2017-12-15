@@ -31,66 +31,75 @@ namespace norim.binn
             _mem.Dispose();
         }
 
-        private int SerializeInternal(object value)
+        private int SerializeInternal(object value, Stream buffer = null)
         {
             if (value == null)
-                return WriteNull();
+                return WriteNull(buffer);
 
             if (value is bool)
-                return Write((bool)value);
+                return Write((bool)value, buffer);
 
             if (value is string)
-                return Write((string)value);
+                return Write((string)value, buffer);
 
             if (value is int)
-                return Write((int)value);
+                return Write((int)value, buffer);
 
             if (value is long)
-                return Write((long)value);
+                return Write((long)value, buffer);
 
             if (value is double)
-                return Write((double)value);
+                return Write((double)value, buffer);
 
             if (value is Single)
-                return Write((Single)value);
+                return Write((Single)value, buffer);
 
             if (value is decimal)
-                return Write((decimal)value);
+                return Write((decimal)value, buffer);
 
             if(value is byte[])
-                return Write((byte[])value);
+                return Write((byte[])value, buffer);
 
             if (value is IEnumerable)
-                return Write((IEnumerable)value);
+                return Write((IEnumerable)value, buffer);
 
             if (value is Guid)
-                return Write((Guid)value);
+                return Write((Guid)value, buffer);
 
             if (value is DateTime)
-                return Write((DateTime)value);
+                return Write((DateTime)value, buffer);
 
             if (value.GetType().IsClass)
-                return WriteClass(value);
+                return WriteClass(value, buffer);
 
             return 0;
         }
 
-        private int WriteNull()
+        private int WriteNull(Stream buffer = null)
         {
-            _mem.WriteByte(Types.Null);
+            if (buffer == null)
+                buffer = _mem;
+
+            buffer.WriteByte(Types.Null);
 
             return 1;
         }
 
-        private int Write(bool value)
+        private int Write(bool value, Stream buffer = null)
         {
-            _mem.WriteByte(value ? Types.True : Types.False);
+            if (buffer == null)
+                buffer = _mem;
+
+            buffer.WriteByte(value ? Types.True : Types.False);
 
             return 1;
         }
 
-        private int Write(int value)
+        private int Write(int value, Stream buffer = null)
         {
+            if (buffer == null)
+                buffer = _mem;
+
             if (value >= 0)
                 return Write((uint)value);
 
@@ -100,155 +109,194 @@ namespace norim.binn
             if (value >= short.MinValue)
                 return Write((short)value);
 
-            _mem.WriteByte(Types.Int32);
-            _mem.Write(BitConverter.GetBytes(value), 0, sizeof(int));
+            buffer.WriteByte(Types.Int32);
+            buffer.Write(BitConverter.GetBytes(value), 0, sizeof(int));
 
             return 1 + sizeof(int);
         }
 
-        private int Write(sbyte value)
+        private int Write(sbyte value, Stream buffer = null)
         {
-            _mem.WriteByte(Types.Int8);
-            _mem.WriteByte((byte)value);
+            if (buffer == null)
+                buffer = _mem;
+
+            buffer.WriteByte(Types.Int8);
+            buffer.WriteByte((byte)value);
 
             return 2;
         }
 
-        private int Write(uint value)
+        private int Write(uint value, Stream buffer = null)
         {
+            if (buffer == null)
+                buffer = _mem;
+
             if (value <= byte.MaxValue)
                 return Write((byte)value);
 
             if (value <= ushort.MaxValue)
                 return Write((ushort)value);
                 
-            _mem.WriteByte(Types.UInt32);
-            _mem.Write(BitConverter.GetBytes(value), 0, sizeof(uint));
+            buffer.WriteByte(Types.UInt32);
+            buffer.Write(BitConverter.GetBytes(value), 0, sizeof(uint));
 
             return 1 + sizeof(uint);
         }
 
-        private int Write(byte value)
+        private int Write(byte value, Stream buffer = null)
         {
-            _mem.WriteByte(Types.UInt8);
-            _mem.WriteByte(value);
+            if (buffer == null)
+                buffer = _mem;
+
+            buffer.WriteByte(Types.UInt8);
+            buffer.WriteByte(value);
 
             return 2;
         }
 
-        private int Write(ushort value)
+        private int Write(ushort value, Stream buffer = null)
         {
-            _mem.WriteByte(Types.UInt16);
-            _mem.Write(BitConverter.GetBytes(value), 0, sizeof(ushort));
+            if (buffer == null)
+                buffer = _mem;
+
+            buffer.WriteByte(Types.UInt16);
+            buffer.Write(BitConverter.GetBytes(value), 0, sizeof(ushort));
 
             return 1 + sizeof(short);
         }
 
-        private int Write(short value)
+        private int Write(short value, Stream buffer = null)
         {
-            _mem.WriteByte(Types.Int16);
-            _mem.Write(BitConverter.GetBytes(value), 0, sizeof(short));
+            if (buffer == null)
+                buffer = _mem;
+
+            buffer.WriteByte(Types.Int16);
+            buffer.Write(BitConverter.GetBytes(value), 0, sizeof(short));
 
             return 1 + sizeof(short);
         }
 
-        private int Write(string value)
+        private int Write(string value, Stream buffer = null)
         {
+            if (buffer == null)
+                buffer = _mem;
+
             var valueData = Encoding.UTF8.GetBytes(value);
             var varintData = ToVarint(valueData.Length);
 
-            _mem.WriteByte(Types.String);
-            _mem.Write(varintData, 0, varintData.Length);
-            _mem.Write(valueData, 0, value.Length);
+            buffer.WriteByte(Types.String);
+            buffer.Write(varintData, 0, varintData.Length);
+            buffer.Write(valueData, 0, value.Length);
 
             return 1 + varintData.Length + valueData.Length;
         }
 
-        private int Write(long value)
+        private int Write(long value, Stream buffer = null)
         {
+            if (buffer == null)
+                buffer = _mem;
+
             if (value >= 0)
                 return Write((ulong)value);
 
-            _mem.WriteByte(Types.Int64);
-            _mem.Write(BitConverter.GetBytes(value), 0, sizeof(long));
+            buffer.WriteByte(Types.Int64);
+            buffer.Write(BitConverter.GetBytes(value), 0, sizeof(long));
 
             return 1 + sizeof(long);
         }
 
-        private int Write(ulong value)
+        private int Write(ulong value, Stream buffer = null)
         {
-            _mem.WriteByte(Types.UInt64);
-            _mem.Write(BitConverter.GetBytes(value), 0, sizeof(ulong));
+            if (buffer == null)
+                buffer = _mem;
+
+            buffer.WriteByte(Types.UInt64);
+            buffer.Write(BitConverter.GetBytes(value), 0, sizeof(ulong));
 
             return 1 + sizeof(ulong);
         }
 
-        private int Write(double value)
+        private int Write(double value, Stream buffer = null)
         {
-            _mem.WriteByte(Types.Float64);
-            _mem.Write(BitConverter.GetBytes(value), 0, sizeof(double));
+            if (buffer == null)
+                buffer = _mem;
+
+            buffer.WriteByte(Types.Float64);
+            buffer.Write(BitConverter.GetBytes(value), 0, sizeof(double));
 
             return 1 + sizeof(double);        
         }
 
-        private int Write(decimal value)
+        private int Write(decimal value, Stream buffer = null)
         {
-            return Write((double)value);
+            return Write((double)value, buffer);
         }
 
-        private int Write(byte[] value)
+        private int Write(byte[] value, Stream buffer = null)
         {
-            _mem.WriteByte(Types.Blob);
-            _mem.Write(BitConverter.GetBytes(value.Length), 0, sizeof(int));
-            _mem.Write(value, 0, value.Length);
+            if (buffer == null)
+                buffer = _mem;
+
+            buffer.WriteByte(Types.Blob);
+            buffer.Write(BitConverter.GetBytes(value.Length), 0, sizeof(int));
+            buffer.Write(value, 0, value.Length);
 
             return 1 + sizeof(int) + value.Length;
         }
 
-        private int Write(IEnumerable value)
+        private int Write(IEnumerable value, Stream buffer = null)
         {
+            if (buffer == null)
+                buffer = _mem;
+
             var enumerator = value.GetEnumerator();
             var count = 0;
 
-            using(var buffer = new MemoryStream())
+            using(var enumeratorBuffer = new MemoryStream())
             {
                 using(var serializer = new Serializer())
                 {
                     while(enumerator.MoveNext())
                     {
                         var data = serializer.Serialize(enumerator.Current);
-                        buffer.Write(data, 0, data.Length);
+                        enumeratorBuffer.Write(data, 0, data.Length);
 
                         count++;
                     }                   
                 }
 
-                var bufferVarintData = ToVarint((int)buffer.Length + 3);
+                var bufferVarintData = ToVarint((int)enumeratorBuffer.Length + 3);
                 var countVaringData = ToVarint(count);
 
                 _mem.WriteByte(Types.List);
                 _mem.Write(bufferVarintData, 0, bufferVarintData.Length);
                 _mem.Write(countVaringData, 0 , countVaringData.Length);
                 
-                buffer.Seek(0, SeekOrigin.Begin);
-                buffer.CopyTo(_mem);
+                enumeratorBuffer.Seek(0, SeekOrigin.Begin);
+                enumeratorBuffer.CopyTo(buffer);
 
-                return 1 + bufferVarintData.Length + countVaringData.Length + (int)buffer.Length;             
+                return 1 + bufferVarintData.Length + countVaringData.Length + (int)enumeratorBuffer.Length;             
             }
         }
 
-        public int Write(Guid value)
+        public int Write(Guid value, Stream buffer = null)
         {
+            if (buffer == null)
+                buffer = _mem;
+
             var data = value.ToByteArray();
 
-            _mem.WriteByte(Types.Guid);
-            _mem.Write(data, 0, data.Length);
+            buffer.WriteByte(Types.Guid);
+            buffer.Write(data, 0, data.Length);
 
             return 1 + data.Length;
         }
 
-        public int Write(DateTime value)
+        public int Write(DateTime value, Stream buffer = null)
         {
+            if (buffer == null)
+                buffer = _mem;
+
             var data = BitConverter.GetBytes(value.Ticks);
 
             _mem.WriteByte(Types.DateTime);
@@ -257,43 +305,41 @@ namespace norim.binn
             return 1 + data.Length;
         }
 
-        private int WriteClass(object value)
+        private int WriteClass(object value, Stream buffer = null)
         {
+            if (buffer == null)
+                buffer = _mem;
+
             var type = value.GetType();
             var properties = type.GetProperties(BindingFlags.Instance | BindingFlags.Public);
 
-            using(var buffer = new MemoryStream())
+            using(var objBuffer = new MemoryStream())
             {
-                using(var serializer = new Serializer())
+                foreach (var prop in properties)
                 {
-                    foreach (var prop in properties)
-                    {
-                        if (!prop.CanRead || !prop.CanWrite)
-                            continue;
+                    if (!prop.CanRead || !prop.CanWrite)
+                        continue;
 
-                        if (prop.Name.Length > 255)
-                            throw new OverflowException("Property name should have max length 255.");
+                    if (prop.Name.Length > 255)
+                        throw new OverflowException("Property name should have max length 255.");
 
-                        var data = serializer.Serialize(prop.GetValue(value));
-
-                        buffer.WriteByte((byte)prop.Name.Length);
-                        buffer.Write(Encoding.UTF8.GetBytes(prop.Name), 0, prop.Name.Length);
-                        buffer.Write(data, 0, data.Length);
-                    }
-
-                    var bufferVarintData = ToVarint((int)buffer.Length + 3);
-                    var countVaringData = ToVarint(properties.Length);
-
-                    _mem.WriteByte(Types.Object);
-                    _mem.Write(bufferVarintData, 0, bufferVarintData.Length);
-                    _mem.Write(countVaringData, 0 , countVaringData.Length);
-                    
-                    buffer.Seek(0, SeekOrigin.Begin);
-                    buffer.CopyTo(_mem);
-
-                    return 1 + bufferVarintData.Length + countVaringData.Length + (int)buffer.Length;  
+                    if (SerializeInternal(prop.GetValue(value), objBuffer) == 0)
+                        throw new NotSupportedException($"Type '{value.GetType()}' is not supported.");                    
                 }
-            }
+
+                var bufferSize = (int)objBuffer.Length;
+                var bufferVarintData = ToVarint(bufferSize + 3);
+                var countVaringData = ToVarint(properties.Length);
+
+                buffer.WriteByte(Types.Object);
+                buffer.Write(bufferVarintData, 0, bufferVarintData.Length);
+                buffer.Write(countVaringData, 0 , countVaringData.Length);                
+
+                objBuffer.Seek(0, SeekOrigin.Begin);
+                objBuffer.CopyTo(buffer);
+
+                return 1 + bufferVarintData.Length + countVaringData.Length + bufferSize;          
+            } 
         }
 
         private byte[] ToVarint(int value)
