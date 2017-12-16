@@ -8,30 +8,22 @@ using System.Text;
 
 namespace norim.binn
 {
-    public sealed class Serializer : IDisposable
+    public static class Serializer
     {
-        private readonly MemoryStream _mem;
+        private static readonly Dictionary<Type, IProperty[]> _classCache = new Dictionary<Type, IProperty[]>();
 
-        private readonly Dictionary<Type, IProperty[]> _classCache;
-
-        public Serializer()
+        public static byte[] Serialize(object value)
         {
-            _mem = new MemoryStream();
-            _classCache = new Dictionary<Type, IProperty[]>();
+            using(var memBuffer = new MemoryStream())
+            {
+                if (SerializeInternal(value, memBuffer) == 0)
+                    throw new NotSupportedException($"Type '{value.GetType()}' is not supported.");
+
+                return memBuffer.ToArray();
+            }
         }
 
-        public byte[] Serialize(object value)
-        {
-            _mem.Seek(0, SeekOrigin.Begin);
-            _mem.SetLength(0);
-
-            if (SerializeInternal(value) == 0)
-                throw new NotSupportedException($"Type '{value.GetType()}' is not supported.");
-
-            return _mem.ToArray();
-        }
-
-        public void RegisterType<T>()
+        public static void RegisterType<T>()
         {
             var type = typeof(T);
             _classCache.Add(type,
@@ -39,13 +31,7 @@ namespace norim.binn
                     .Select(p => new CompiledProperty<T>(p)).ToArray());
         }
 
-        public void Dispose()
-        {
-            _classCache.Clear();
-            _mem.Dispose();
-        }
-
-        private int SerializeInternal(object value, Stream buffer = null)
+        private static int SerializeInternal(object value, Stream buffer)
         {
             if (value == null)
                 return WriteNull(buffer);
@@ -89,39 +75,30 @@ namespace norim.binn
             return 0;
         }
 
-        private int WriteNull(Stream buffer = null)
+        private static int WriteNull(Stream buffer)
         {
-            if (buffer == null)
-                buffer = _mem;
-
             buffer.WriteByte(Types.Null);
 
             return 1;
         }
 
-        private int Write(bool value, Stream buffer = null)
+        private static int Write(bool value, Stream buffer)
         {
-            if (buffer == null)
-                buffer = _mem;
-
             buffer.WriteByte(value ? Types.True : Types.False);
 
             return 1;
         }
 
-        private int Write(int value, Stream buffer = null)
+        private static int Write(int value, Stream buffer)
         {
-            if (buffer == null)
-                buffer = _mem;
-
             if (value >= 0)
-                return Write((uint)value);
+                return Write((uint)value, buffer);
 
             if (value >= sbyte.MinValue)
-                return Write((sbyte)value);
+                return Write((sbyte)value, buffer);
 
             if (value >= short.MinValue)
-                return Write((short)value);
+                return Write((short)value, buffer);
 
             buffer.WriteByte(Types.Int32);
             buffer.Write(BitConverter.GetBytes(value), 0, sizeof(int));
@@ -129,27 +106,21 @@ namespace norim.binn
             return 1 + sizeof(int);
         }
 
-        private int Write(sbyte value, Stream buffer = null)
+        private static int Write(sbyte value, Stream buffer)
         {
-            if (buffer == null)
-                buffer = _mem;
-
             buffer.WriteByte(Types.Int8);
             buffer.WriteByte((byte)value);
 
             return 2;
         }
 
-        private int Write(uint value, Stream buffer = null)
+        private static int Write(uint value, Stream buffer)
         {
-            if (buffer == null)
-                buffer = _mem;
-
             if (value <= byte.MaxValue)
-                return Write((byte)value);
+                return Write((byte)value, buffer);
 
             if (value <= ushort.MaxValue)
-                return Write((ushort)value);
+                return Write((ushort)value, buffer);
                 
             buffer.WriteByte(Types.UInt32);
             buffer.Write(BitConverter.GetBytes(value), 0, sizeof(uint));
@@ -157,44 +128,32 @@ namespace norim.binn
             return 1 + sizeof(uint);
         }
 
-        private int Write(byte value, Stream buffer = null)
+        private static int Write(byte value, Stream buffer)
         {
-            if (buffer == null)
-                buffer = _mem;
-
             buffer.WriteByte(Types.UInt8);
             buffer.WriteByte(value);
 
             return 2;
         }
 
-        private int Write(ushort value, Stream buffer = null)
+        private static int Write(ushort value, Stream buffer)
         {
-            if (buffer == null)
-                buffer = _mem;
-
             buffer.WriteByte(Types.UInt16);
             buffer.Write(BitConverter.GetBytes(value), 0, sizeof(ushort));
 
             return 1 + sizeof(short);
         }
 
-        private int Write(short value, Stream buffer = null)
+        private static int Write(short value, Stream buffer)
         {
-            if (buffer == null)
-                buffer = _mem;
-
             buffer.WriteByte(Types.Int16);
             buffer.Write(BitConverter.GetBytes(value), 0, sizeof(short));
 
             return 1 + sizeof(short);
         }
 
-        private int Write(string value, Stream buffer = null)
+        private static int Write(string value, Stream buffer)
         {
-            if (buffer == null)
-                buffer = _mem;
-
             var valueData = Encoding.UTF8.GetBytes(value);
             var varintData = ToVarint(valueData.Length);
 
@@ -205,13 +164,10 @@ namespace norim.binn
             return 1 + varintData.Length + valueData.Length;
         }
 
-        private int Write(long value, Stream buffer = null)
+        private static int Write(long value, Stream buffer)
         {
-            if (buffer == null)
-                buffer = _mem;
-
             if (value >= 0)
-                return Write((ulong)value);
+                return Write((ulong)value, buffer);
 
             buffer.WriteByte(Types.Int64);
             buffer.Write(BitConverter.GetBytes(value), 0, sizeof(long));
@@ -219,38 +175,29 @@ namespace norim.binn
             return 1 + sizeof(long);
         }
 
-        private int Write(ulong value, Stream buffer = null)
+        private static int Write(ulong value, Stream buffer)
         {
-            if (buffer == null)
-                buffer = _mem;
-
             buffer.WriteByte(Types.UInt64);
             buffer.Write(BitConverter.GetBytes(value), 0, sizeof(ulong));
 
             return 1 + sizeof(ulong);
         }
 
-        private int Write(double value, Stream buffer = null)
+        private static int Write(double value, Stream buffer)
         {
-            if (buffer == null)
-                buffer = _mem;
-
             buffer.WriteByte(Types.Float64);
             buffer.Write(BitConverter.GetBytes(value), 0, sizeof(double));
 
             return 1 + sizeof(double);        
         }
 
-        private int Write(decimal value, Stream buffer = null)
+        private static int Write(decimal value, Stream buffer)
         {
             return Write((double)value, buffer);
         }
 
-        private int Write(byte[] value, Stream buffer = null)
+        private static int Write(byte[] value, Stream buffer)
         {
-            if (buffer == null)
-                buffer = _mem;
-
             buffer.WriteByte(Types.Blob);
             buffer.Write(BitConverter.GetBytes(value.Length), 0, sizeof(int));
             buffer.Write(value, 0, value.Length);
@@ -258,11 +205,8 @@ namespace norim.binn
             return 1 + sizeof(int) + value.Length;
         }
 
-        private int Write(IEnumerable value, Stream buffer = null)
+        private static int Write(IEnumerable value, Stream buffer)
         {
-            if (buffer == null)
-                buffer = _mem;
-
             var enumerator = value.GetEnumerator();
             var count = 0;
 
@@ -290,11 +234,8 @@ namespace norim.binn
             }
         }
 
-        public int Write(Guid value, Stream buffer = null)
+        public static int Write(Guid value, Stream buffer)
         {
-            if (buffer == null)
-                buffer = _mem;
-
             var data = value.ToByteArray();
 
             buffer.WriteByte(Types.Guid);
@@ -303,24 +244,18 @@ namespace norim.binn
             return 1 + data.Length;
         }
 
-        public int Write(DateTime value, Stream buffer = null)
+        public static int Write(DateTime value, Stream buffer)
         {
-            if (buffer == null)
-                buffer = _mem;
-
             var data = BitConverter.GetBytes(value.Ticks);
 
-            _mem.WriteByte(Types.DateTime);
-            _mem.Write(data, 0, data.Length);
+            buffer.WriteByte(Types.DateTime);
+            buffer.Write(data, 0, data.Length);
 
             return 1 + data.Length;
         }
 
-        private int WriteClass(object value, Stream buffer = null)
+        private static int WriteClass(object value, Stream buffer)
         {
-            if (buffer == null)
-                buffer = _mem;
-
             var valueType = value.GetType();
             if (!_classCache.ContainsKey(valueType))
             {
@@ -360,7 +295,7 @@ namespace norim.binn
             } 
         }
 
-        private byte[] ToVarint(int value)
+        private static byte[] ToVarint(int value)
         {
             if (value > 127)
                 return BitConverter.GetBytes(value | 0x80000000);

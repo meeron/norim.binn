@@ -48,18 +48,16 @@ namespace norim.binn
 
             Console.WriteLine("Serializing BINN...");
 
-            using(var serializer = new Serializer())
-            {
-                var sw = new Stopwatch();
-                serializer.RegisterType<Person>();
-                
-                sw.Start();
-                var data = serializer.Serialize(list);
-                sw.Stop();
 
-                Console.WriteLine($"BINN: Count={count}, Duration={sw.ElapsedMilliseconds}ms, Size={data.Length}");
-                //Console.WriteLine($"Duration={sw.ElapsedMilliseconds}ms, Size={data.Length}, Bytes={Encoding.UTF8.GetString(data)}, Base64={Convert.ToBase64String(data)}");
-            }
+            var sw = new Stopwatch();
+            Serializer.RegisterType<Person>();
+            
+            sw.Start();
+            var data = Serializer.Serialize(list);
+            sw.Stop();
+
+            Console.WriteLine($"BINN: Count={count}, Duration={sw.ElapsedMilliseconds}ms, Size={data.Length}");
+            //Console.WriteLine($"Duration={sw.ElapsedMilliseconds}ms, Size={data.Length}, Bytes={Encoding.UTF8.GetString(data)}, Base64={Convert.ToBase64String(data)}");
 
             Console.WriteLine("Serializing JSON...");
 
