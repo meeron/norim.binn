@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text;
+using ProtoBuf;
 
 namespace norim.binn
 {
@@ -34,15 +35,16 @@ namespace norim.binn
 
 
             Console.WriteLine("Preparing...");
-            var count = 1000000;
+            var count = 100000;
             for (int i = 0; i < count; i++)
             {
                 list.Add(new Person
                 { 
                     Name = "Miron",
+                    Age = 32,
                     Id = Guid.NewGuid(),
                     DateOfBirth = new DateTime(1985, 4, 14),
-                    Parent = new Person { Id = Guid.NewGuid(), Name = "Stanisław", DateOfBirth = new DateTime(1956, 11, 4) }
+                    Parent = new Person { Id = Guid.NewGuid(), Name = "Stanisław", DateOfBirth = new DateTime(1956, 11, 4), Age = 56 }
                 });                
             }
 
@@ -50,37 +52,45 @@ namespace norim.binn
 
 
             var sw = new Stopwatch();
-            Serializer.RegisterType<Person>();
-            
+            Serializer.RegisterType<Person>();       
             sw.Start();
             var data = Serializer.Serialize(list);
             sw.Stop();
-
             Console.WriteLine($"BINN: Count={count}, Duration={sw.ElapsedMilliseconds}ms, Size={data.Length}");
-            //Console.WriteLine($"Duration={sw.ElapsedMilliseconds}ms, Size={data.Length}, Bytes={Encoding.UTF8.GetString(data)}, Base64={Convert.ToBase64String(data)}");
 
             Console.WriteLine("Serializing JSON...");
-
             var sw1 = new Stopwatch();
             sw1.Start();
             var json = Newtonsoft.Json.JsonConvert.SerializeObject(list);
             sw1.Stop();
-
             Console.WriteLine($"JSON: Count={count}, Duration={sw1.ElapsedMilliseconds}ms, Size={json.Length}");
 
+            Console.WriteLine("Serializing ProtoBuffer...");
+            var sw2 = new Stopwatch();
+            sw2.Start();
+            var serializer = new ProtoBuffer.SimpleSerializer();
+            var protoData = serializer.ToByteArray(list);
+            sw2.Stop();
+            Console.WriteLine($"ProtoBuffer: Count={count}, Duration={sw2.ElapsedMilliseconds}ms, Size={protoData.Length}");
         }
     }
 
+    [ProtoContract]
     public class Person
     {
+        [ProtoMember(1)]
         public Guid Id { get; set; }
 
+        [ProtoMember(2)]
         public string Name { get; set; }
 
-        public int Age => (int)((DateTime.Now - DateOfBirth).TotalDays / 365);
+        [ProtoMember(3)]
+        public int Age { get; set; }
 
+        [ProtoMember(4)]
         public DateTime DateOfBirth { get; set; }
 
+        [ProtoMember(5)]
         public Person Parent { get; set; }
     }
 }

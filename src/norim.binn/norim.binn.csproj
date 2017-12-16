@@ -7,6 +7,7 @@
 
   <ItemGroup>
     <PackageReference Include="Newtonsoft.Json" Version="10.0.3" />
+    <PackageReference Include="ProtoBuffer" Version="1.2.0" />
   </ItemGroup>
 
 </Project>
