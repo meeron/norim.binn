@@ -1,4 +1,6 @@
 using System;
+using System.Collections;
+using System.Collections.Generic;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -49,9 +51,29 @@ namespace norim.binn
                     return ReadUInt16(buffer);
                 case Types.Int16:
                     return ReadInt16(buffer);
+                case Types.List:
+                    return ReadList(buffer);
                 default:
                     throw new NotSupportedException($"Type '0x{type.ToString("X").ToLower()}' not supported.");
             }
+        }
+
+        private static Array ReadList(Stream buffer)
+        {
+            var dataLength = ReadVarint(buffer);
+            var itemsCount = ReadVarint(buffer);
+
+            var firstItem = DeserializeInternal(buffer);
+            var array = Array.CreateInstance(firstItem.GetType(), itemsCount);
+
+            array.SetValue(firstItem, 0);
+
+            for (int i = 1; i < itemsCount; i++)
+            {
+                array.SetValue(DeserializeInternal(buffer), i);                
+            }
+
+            return array;
         }
 
         private static int ReadInt16(Stream buffer)

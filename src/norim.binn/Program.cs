@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text;
@@ -90,7 +91,8 @@ namespace norim.binn
             DeserializeTest(1);
             DeserializeTest(-1);
             DeserializeTest(346);
-            DeserializeTest(-346);            
+            DeserializeTest(-346);
+            DeserializeTest(new int[] { 0, 1, -1, 2, -2, 4, -4, 6, -6 });            
         }
 
         static void DeserializeTest(object value)
