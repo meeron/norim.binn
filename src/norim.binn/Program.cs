@@ -10,6 +10,11 @@ namespace norim.binn
     {
         static void Main(string[] args)
         {
+            DeserializeTest();
+        }
+
+        static void SerializeTest()
+        {
             var list = new List<Person>();
             // list.Add(null);
             // list.AddRange(new object[] { true, false });
@@ -72,6 +77,18 @@ namespace norim.binn
             var protoData = serializer.ToByteArray(list);
             sw2.Stop();
             Console.WriteLine($"ProtoBuffer: Count={count}, Duration={sw2.ElapsedMilliseconds}ms, Size={protoData.Length}");
+        }
+
+        static void DeserializeTest()
+        {
+            Deserializer.Deserialize<string>(Serializer.Serialize(null));
+            Deserializer.Deserialize<string>(Serializer.Serialize("This is test"));
+            Deserializer.Deserialize<bool>(Serializer.Serialize(true));
+            Deserializer.Deserialize<bool>(Serializer.Serialize(false));
+            Deserializer.Deserialize<Guid>(Serializer.Serialize(Guid.NewGuid()));
+            Deserializer.Deserialize<DateTime>(Serializer.Serialize(DateTime.Now));
+
+            Console.WriteLine("Deserialize OK");
         }
     }
 
