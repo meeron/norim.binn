@@ -81,14 +81,34 @@ namespace norim.binn
 
         static void DeserializeTest()
         {
-            Deserializer.Deserialize<string>(Serializer.Serialize(null));
-            Deserializer.Deserialize<string>(Serializer.Serialize("This is test"));
-            Deserializer.Deserialize<bool>(Serializer.Serialize(true));
-            Deserializer.Deserialize<bool>(Serializer.Serialize(false));
-            Deserializer.Deserialize<Guid>(Serializer.Serialize(Guid.NewGuid()));
-            Deserializer.Deserialize<DateTime>(Serializer.Serialize(DateTime.Now));
+            DeserializeTest(null);
+            DeserializeTest("This is test");
+            DeserializeTest(true);
+            DeserializeTest(false);
+            DeserializeTest(Guid.NewGuid());
+            DeserializeTest(new DateTime(1985, 4, 14, 15, 0, 0));
+            DeserializeTest(1);
+            DeserializeTest(-1);
+            DeserializeTest(346);
+            DeserializeTest(-346);            
+        }
 
-            Console.WriteLine("Deserialize OK");
+        static void DeserializeTest(object value)
+        {
+            var result = Deserializer.Deserialize(Serializer.Serialize(value));
+
+            if (value == null)
+                Log("null", string.Empty, result == null);
+            else
+                Log(value.GetType().Name, value.ToString(), value.Equals(result));              
+        }
+
+        static void Log(string type, string value, bool result)
+        {
+            Console.Write($"{type}={value} ");
+            Console.ForegroundColor = result ? ConsoleColor.Green : ConsoleColor.Red;
+            Console.Write($"{result}\n");
+            Console.ResetColor();
         }
     }
 

@@ -15,6 +15,14 @@ namespace norim.binn
             }
         }
 
+        public static object Deserialize(byte[] data)
+        {
+            using(var buffer = new MemoryStream(data))
+            {
+                return DeserializeInternal(buffer);
+            }            
+        }
+
         public static object DeserializeInternal(Stream buffer)
         {
             var type = (byte)buffer.ReadByte();
@@ -33,9 +41,45 @@ namespace norim.binn
                     return ReadGuid(buffer);
                 case Types.DateTime:
                     return ReadDateTime(buffer);
+                case Types.UInt8:
+                    return ReadByte(buffer);
+                case Types.Int8:
+                    return ReadSByte(buffer);
+                case Types.UInt16:
+                    return ReadUInt16(buffer);
+                case Types.Int16:
+                    return ReadInt16(buffer);
                 default:
                     throw new NotSupportedException($"Type '0x{type.ToString("X").ToLower()}' not supported.");
             }
+        }
+
+        private static int ReadInt16(Stream buffer)
+        {
+            var valueBuffer = new byte[sizeof(short)];
+
+            buffer.Read(valueBuffer, 0, valueBuffer.Length);
+
+            return BitConverter.ToInt16(valueBuffer, 0);
+        }
+
+        private static int ReadUInt16(Stream buffer)
+        {
+            var valueBuffer = new byte[sizeof(ushort)];
+
+            buffer.Read(valueBuffer, 0, valueBuffer.Length);
+
+            return BitConverter.ToUInt16(valueBuffer, 0);
+        }
+
+        private static int ReadSByte(Stream buffer)
+        {
+            return buffer.ReadByte() - (byte.MaxValue + 1);
+        }
+
+        private static int ReadByte(Stream buffer)
+        {
+            return buffer.ReadByte();
         }
 
         private static DateTime ReadDateTime(Stream buffer)

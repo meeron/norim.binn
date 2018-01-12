@@ -141,7 +141,7 @@ namespace norim.binn
             buffer.WriteByte(Types.UInt16);
             buffer.Write(BitConverter.GetBytes(value), 0, sizeof(ushort));
 
-            return 1 + sizeof(short);
+            return 1 + sizeof(ushort);
         }
 
         private static int Write(short value, Stream buffer)
